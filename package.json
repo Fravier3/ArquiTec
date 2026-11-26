@@ -1,0 +1,27 @@
+{
+  "name": "arquitec",
+  "version": "1.0.0",
+  "description": "Estudio 3D instalable con proyectos locales",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/pwa-build.mjs",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Fravier3/ArquiTec.git"
+  },
+  "type": "module",
+  "dependencies": {
+    "lucide": "1.1.0",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.4.0"
+  },
+  "private": true,
+  "engines": {
+    "node": ">=22"
+  }
+}
