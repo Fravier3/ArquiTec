@@ -2,7 +2,12 @@ import * as T from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { colors } from './model.js'
 
-const presets = { iso: [1.14, 0.78, 1.26], top: [0, 1, 0.0001], front: [0, 0, 1], side: [1, 0, 0] }
+const presets = {
+  iso: [1.14, 0.78, 1.26],
+  top: [0, 1, 0.0001],
+  front: [0, 0, 1],
+  side: [1, 0, 0],
+}
 const radians = T.MathUtils.degToRad
 const ink = 0x435bc5
 
@@ -124,7 +129,12 @@ export function createViewport(host) {
   ]) {
     const line = new T.Line(
       new T.BufferGeometry().setFromPoints([new T.Vector3(...start), new T.Vector3(...dest)]),
-      new T.LineBasicMaterial({ color, transparent: true, opacity: 0.56, toneMapped: false }),
+      new T.LineBasicMaterial({
+        color,
+        transparent: true,
+        opacity: 0.56,
+        toneMapped: false,
+      }),
     )
     axes.add(line)
   }
@@ -132,7 +142,11 @@ export function createViewport(host) {
   const models = new T.Group()
   scene.add(models)
   const material = materials()
-  const edgeInk = new T.LineBasicMaterial({ color: 0x28384a, transparent: true, opacity: 0.26 })
+  const edgeInk = new T.LineBasicMaterial({
+    color: 0x28384a,
+    transparent: true,
+    opacity: 0.26,
+  })
   const selectedInk = new T.LineBasicMaterial({
     color: ink,
     depthTest: false,
@@ -293,13 +307,25 @@ export function createViewport(host) {
   }
 
   function tool(name) {
-    controls.mouseButtons.LEFT = name === 'orbit' ? T.MOUSE.ROTATE : name === 'pan' ? T.MOUSE.PAN : null
+    controls.mouseButtons.LEFT = ['smart', 'orbit'].includes(name)
+      ? T.MOUSE.ROTATE
+      : name === 'pan'
+        ? T.MOUSE.PAN
+        : null
     controls.mouseButtons.MIDDLE = T.MOUSE.ROTATE
     controls.mouseButtons.RIGHT = T.MOUSE.PAN
-    controls.touches.ONE = name === 'orbit' ? T.TOUCH.ROTATE : name === 'pan' ? T.TOUCH.PAN : null
+    controls.touches.ONE = ['smart', 'orbit'].includes(name)
+      ? T.TOUCH.ROTATE
+      : name === 'pan'
+        ? T.TOUCH.PAN
+        : null
     controls.touches.TWO = T.TOUCH.DOLLY_PAN
     canvas.style.cursor =
-      name === 'orbit' || name === 'pan' ? 'grab' : name === 'select' ? 'default' : 'crosshair'
+      ['smart', 'orbit'].includes(name) || name === 'pan'
+        ? 'grab'
+        : name === 'select'
+          ? 'default'
+          : 'crosshair'
   }
 
   function verticalScale() {
@@ -312,5 +338,15 @@ export function createViewport(host) {
     render()
   }
 
-  return { canvas, sync, preview, ground, pick, view, tool, guides, verticalScale }
+  return {
+    canvas,
+    sync,
+    preview,
+    ground,
+    pick,
+    view,
+    tool,
+    guides,
+    verticalScale,
+  }
 }

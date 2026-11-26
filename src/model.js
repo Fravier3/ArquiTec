@@ -18,7 +18,20 @@ const clamp = (n, lo, hi, fallback) =>
   typeof n === 'number' && Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback
 
 export function part(name, x, y, z, w, h, d, material, extra = {}) {
-  return { id: uid(), name, x, y, z, w, h, d, material, rotation: 0, kind: 'rect', ...extra }
+  return {
+    id: uid(),
+    name,
+    x,
+    y,
+    z,
+    w,
+    h,
+    d,
+    material,
+    rotation: 0,
+    kind: 'rect',
+    ...extra,
+  }
 }
 
 export function project(name, items = []) {
@@ -67,6 +80,8 @@ export function validProject(raw) {
         rotation: clamp(item.rotation, -3600, 3600, 0),
         board: item.board === true,
         hidden: item.hidden === true,
+        group: typeof item.group === 'string' ? item.group : undefined,
+        assembly: typeof item.assembly === 'string' ? item.assembly.slice(0, 80) : undefined,
       },
     )
   })

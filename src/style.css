@@ -939,3 +939,27 @@ kbd {
   border-radius: 10px;
   padding: 14px;
 }
+
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+#app {
+  height: var(--visible-height, 100dvh);
+}
+button,
+.rail,
+canvas {
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+input,
+textarea {
+  font-size: 16px !important;
+  touch-action: manipulation;
+  user-select: text;
+}
+select {
+  font-size: 16px;
+}

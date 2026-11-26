@@ -1,12 +1,12 @@
 import './style.css'
+import { kitchenModule } from './catalog.js'
+import { setupInput } from './input.js'
 import { $, esc, icon, icons, layout, tools, download } from './ui.js'
 import {
   colors,
-  cabinet,
   clone,
   demo,
   format,
-  part,
   project,
   round,
   simplePolygon,
@@ -29,7 +29,9 @@ const keys = Object.fromEntries(tools.map(([id, i, name, key]) => [key.toLowerCa
 let viewport
 let current
 let selected
-let activeTool = 'select'
+let activeTool = 'smart'
+let holdTimer
+let held = false
 let activeTab = 'geometry'
 let guides = true
 let past = []
@@ -104,7 +106,7 @@ function activeProject(p, exists = false) {
   future = []
   selected = undefined
   activeTab = 'geometry'
-  changeTool('select')
+  changeTool('smart')
   refresh()
   viewport?.view($('view').value, true)
   queueSave(exists)
@@ -385,6 +387,7 @@ function finishPolygon() {
 }
 
 function cancel() {
+  clearTimeout(holdTimer)
   anchor = undefined
   vertices = []
   pointer = undefined
@@ -407,6 +410,7 @@ function bindView() {
       }
     }
     if (e.button !== 0 || zoomTouch || ['orbit', 'pan'].includes(activeTool)) return
+    held = false
     const item = current.items.find((p) => p.id === viewport.pick(e))
     pointer = {
       id: e.pointerId,
@@ -415,6 +419,61 @@ function bindView() {
       item,
     }
     canvas.setPointerCapture(e.pointerId)
+    if (item) {
+      holdTimer = setTimeout(() => {
+        if (!pointer || zoomTouch) return
+        held = true
+        const id = item.id
+        cancel()
+        select(id)
+        modal(
+          'Opciones del objeto',
+          '<p class="guide-intro">' +
+            esc(item.name) +
+            '</p><div class="dialog-actions"><button id="hold-delete" class="secondary danger">Eliminar objeto</button>' +
+            (item.group
+              ? '<button id="hold-assembly" class="secondary danger">Eliminar módulo completo</button>'
+              : '') +
+            '<button id="hold-edit" class="secondary">Editar medidas</button><button id="hold-copy" class="secondary">Duplicar</button></div>',
+        )
+        $('hold-delete').onclick = () => {
+          close()
+          dropSelected()
+        }
+        if ($('hold-assembly'))
+          $('hold-assembly').onclick = () => {
+            close()
+            change(() => {
+              current.items = current.items.filter((p) => p.group !== item.group)
+            })
+            selected = undefined
+            refresh()
+          }
+        $('hold-edit').onclick = () => {
+          close()
+          activeTab = 'geometry'
+          panel(true)
+          refresh()
+        }
+        $('hold-copy').onclick = () => {
+          close()
+          try {
+            insert([
+              {
+                ...clone(item),
+                id: uid(),
+                group: undefined,
+                assembly: undefined,
+                name: item.name + ' · copia',
+                x: Math.min(1000, item.x + 0.3),
+              },
+            ])
+          } catch (error) {
+            notify(error.message)
+          }
+        }
+      }, 650)
+    }
     if (['push', 'move', 'rotate'].includes(activeTool) && item) select(item.id)
   })
 
@@ -425,7 +484,9 @@ function bindView() {
       dy = e.clientY - p.start.y
     if (activeTool === 'push') {
       const n = item.h - dy * viewport.verticalScale()
-      return { h: Math.max(0, Math.min(1000, $('snap').checked ? Math.round(n * 20) / 20 : round(n))) }
+      return {
+        h: Math.max(0, Math.min(1000, $('snap').checked ? Math.round(n * 20) / 20 : round(n))),
+      }
     }
     if (activeTool === 'rotate') {
       const n = item.rotation + dx * 0.65
@@ -442,7 +503,9 @@ function bindView() {
   }
 
   canvas.addEventListener('pointermove', (e) => {
-    if (zoomTouch) return
+    if (pointer && Math.hypot(e.clientX - pointer.start.x, e.clientY - pointer.start.y) > 6)
+      clearTimeout(holdTimer)
+    if (zoomTouch || held) return
     const p = ground(e)
     if (!p) return
     if (['rect', 'circle'].includes(activeTool)) {
@@ -462,6 +525,12 @@ function bindView() {
   })
 
   canvas.addEventListener('pointerup', (e) => {
+    clearTimeout(holdTimer)
+    if (held) {
+      held = false
+      touch.delete(e.pointerId)
+      return
+    }
     touch.delete(e.pointerId)
     if (zoomTouch) {
       if (!touch.size) zoomTouch = false
@@ -471,7 +540,7 @@ function bindView() {
     const p = ground(e)
     const moved = Math.hypot(e.clientX - pointer.start.x, e.clientY - pointer.start.y) > 6
     try {
-      if (activeTool === 'select' && !moved) select(pointer.item?.id)
+      if (['select', 'smart'].includes(activeTool) && !moved) select(pointer.item?.id)
       if (['push', 'move', 'rotate'].includes(activeTool)) {
         if (moved && pointer.item) {
           const next = transform(e)
@@ -589,7 +658,9 @@ function events() {
   $('insert-cabinet').onclick = () =>
     cabinetDialog((opts) => {
       const start = selectedItem()
-      insert(cabinet(opts, start ? start.x + start.w / 2 + opts.width / 2 + 0.15 : 0, start?.z || 0))
+      insert(
+        kitchenModule(opts, start ? start.x + start.w / 2 + opts.width / 2 + 0.15 : 0, start?.z || 0),
+      )
       viewport?.view($('view').value, true)
       notify('Gabinete insertado. El plan de corte incluye sus tableros.')
     })
@@ -715,6 +786,7 @@ async function start() {
   }
   activeProject(first || demo(), Boolean(first))
   events()
+  setupInput()
   bindView()
   requestAnimationFrame(() => requestAnimationFrame(() => viewport?.view($('view').value, true)))
   registerUpdates(() => saveQueue, notify)

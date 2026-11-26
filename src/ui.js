@@ -75,6 +75,13 @@ export const esc = (s) =>
     (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
   )
 export const tools = [
+  [
+    'smart',
+    'hand',
+    'Mano libre',
+    'A',
+    'Arrastra para orbitar, toca para seleccionar y mantén presionado para eliminar o editar.',
+  ],
   ['select', 'mouse-pointer-2', 'Seleccionar', 'V', 'Toca una pieza para ver y editar sus propiedades.'],
   [
     'rect',
@@ -128,7 +135,12 @@ export const tools = [
   ['orbit', 'rotate-3d', 'Orbitar', 'O', 'Arrastra para girar la cámara alrededor del modelo.'],
   ['pan', 'hand', 'Desplazar vista', 'H', 'Arrastra para desplazar la cámara sin girarla.'],
 ]
-export const viewNames = { iso: 'Perspectiva', top: 'Superior', front: 'Frontal', side: 'Lateral' }
+export const viewNames = {
+  iso: 'Perspectiva',
+  top: 'Superior',
+  front: 'Frontal',
+  side: 'Lateral',
+}
 
 const button = (id, i, title, cls = '') =>
   '<button id="' +
@@ -163,7 +175,7 @@ export function layout(root) {
         ${button('undo', 'undo-2', 'Deshacer (Ctrl/Cmd+Z)')}
         ${button('redo', 'redo-2', 'Rehacer (Ctrl/Cmd+Shift+Z)')}
         <span class="divider"></span>
-        <button id="insert-cabinet" class="ghost compact" title="Insertar gabinete">${icon('box')}<span>Gabinete</span></button>
+        <button id="insert-cabinet" class="ghost compact" title="Biblioteca de gabinetes">${icon('box')}<span>Biblioteca</span></button>
         <button id="open-cuts" class="ghost compact" title="Plan de corte">${icon('clipboard-list')}<span>Corte</span></button>
         ${button('toggle-inspector', 'panel-right', 'Mostrar u ocultar inspector')}
       </div>
@@ -203,7 +215,10 @@ export function layout(root) {
 
 export function download(content, name, type) {
   const url = URL.createObjectURL(new Blob([content], { type }))
-  const a = Object.assign(document.createElement('a'), { href: url, download: name })
+  const a = Object.assign(document.createElement('a'), {
+    href: url,
+    download: name,
+  })
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1500)
 }

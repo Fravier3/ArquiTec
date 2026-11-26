@@ -1,5 +1,6 @@
+import { presets, kitchenModule } from './catalog.js'
 import { $, esc, icon, icons, tools, download } from './ui.js'
-import { colors, cabinet, cutPlans, format } from './model.js'
+import { colors, cutPlans, format } from './model.js'
 
 export function modal(title, content) {
   $('dialog-body').onclick = null
@@ -32,7 +33,7 @@ export function guide(version) {
     'Guía del estudio',
     `<p class="guide-intro">Dibuja una cara sobre la cuadrícula, extrúyela y ajusta las medidas en el Inspector. Usa Proyectos para abrir un modelo anterior o exportar un respaldo.</p>
     <ul class="guide-list">${tools.map(([id, i, name, key, description]) => '<li>' + icon(i) + '<strong>' + name + '</strong><kbd>' + key + '</kbd><p>' + description + '</p></li>').join('')}</ul>
-    <p class="guide-intro"><strong>Cámara.</strong> Usa la rueda o el pellizco para acercarte y el encuadre para recuperar el modelo. Con un mouse, el botón central orbita y el derecho desplaza.</p>
+    <p class="guide-intro"><strong>Mano libre.</strong> Arrastra para orbitar, toca una pieza para seleccionarla y mantenla presionada para abrir sus opciones. Eliminar se puede deshacer con la flecha Deshacer.</p><p class="guide-intro"><strong>Cámara.</strong> Usa la rueda o el pellizco para acercarte y el encuadre para recuperar el modelo. Con un mouse, el botón central orbita y el derecho desplaza.</p>
     <p class="guide-intro"><strong>Instalación.</strong> En iPhone y iPad abre el enlace en Safari y elige Compartir → Añadir a pantalla de inicio. En navegadores de escritorio compatibles, usa la opción de instalar de la barra de direcciones.</p>
     <p class="guide-intro"><strong>Respaldo.</strong> Los proyectos se guardan en este navegador. Exporta un archivo .arquitec para conservar una copia en Archivos o abrirlo en otro dispositivo.</p>
     <small>ArquiTec ${esc(version)}</small>`,
@@ -60,7 +61,7 @@ export function nameDialog(title, label, current, submit) {
 export function projectsModal(projects, currentId, { open, backup, remove, example }) {
   modal(
     'Proyectos locales',
-    `<p class="guide-intro">Abre un modelo de este dispositivo o importa un respaldo de ArquiTec.</p>
+    `<p class="guide-intro">Los dibujos están en el almacenamiento local de ArquiTec (IndexedDB), dentro de este navegador o PWA. Abre uno aquí. Para verlo en la app Archivos o llevarlo a otro dispositivo, exporta su respaldo .arquitec. Borrar los datos del sitio elimina las copias locales.</p>
     <div class="dialog-actions">${button(icon('upload') + ' Importar archivo', 'import-action')}${button('Abrir ejemplo', 'open-example')}</div>
     <div>${projects
       .map(
@@ -84,8 +85,11 @@ export function projectsModal(projects, currentId, { open, backup, remove, examp
 
 export function cabinetDialog(insert) {
   modal(
-    'Insertar gabinete',
-    `<form id="cabinet-form"><p class="guide-intro">Genera un gabinete abierto con laterales, trasera y repisas. Sus tableros aparecerán en la lista de corte.</p>
+    'Biblioteca de gabinetes',
+    `<form id="cabinet-form"><p class="guide-intro">Elige un módulo de cocina, ajusta sus medidas e insértalo. Incluye frentes, tiradores y tableros para el plan de corte.</p>
+    <label class="field field-full">Objeto<select id="cabinet-type" name="type">${Object.entries(presets)
+      .map(([id, p]) => '<option value="' + id + '">' + p.name + '</option>')
+      .join('')}</select></label>
     <div class="fields two">
       ${number('width', 'Ancho (mm)', 900, 50, 100000)}
       ${number('height', 'Altura (mm)', 850, 50, 100000)}
@@ -99,12 +103,18 @@ export function cabinetDialog(insert) {
     <button class="primary" type="submit">${icon('plus')} Insertar gabinete</button></form>`,
   )
   icons()
+  $('cabinet-type').onchange = (event) => {
+    const preset = presets[event.target.value]
+    const form = $('cabinet-form')
+    for (const key of ['width', 'height', 'depth', 'shelves']) form.elements[key].value = preset[key]
+  }
   $('cabinet-form').onsubmit = (e) => {
     e.preventDefault()
     const fields = new FormData(e.currentTarget)
     try {
       const read = (key) => Number(fields.get(key)) / 1000
       const opts = {
+        type: fields.get('type'),
         width: read('width'),
         height: read('height'),
         depth: read('depth'),
@@ -112,7 +122,7 @@ export function cabinetDialog(insert) {
         shelves: Number(fields.get('shelves')),
         material: fields.get('material'),
       }
-      cabinet(opts)
+      kitchenModule(opts)
       insert(opts)
       close()
     } catch (error) {
